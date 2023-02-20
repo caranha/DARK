@@ -10,9 +10,9 @@
 // - Lakes are generated
 // - Plant growth depends on lake proximity
 
-// TODO: Lakes change with time
-// TODO: Make move speed a parameter (calculate cell neighbors inside agent move)
 // TODO: Reintroduce Predators near edge if extinct every 100 cycles
+
+// TODO: Make move speed a parameter (calculate cell neighbors inside agent move)
 // TODO: More intelligent behaviors 
 // TODO: Cave
 
@@ -30,12 +30,14 @@ global {
 	
 	// Prey
     int nb_preys_init <- 200;
+    int nb_preys_migrate <- 20;
     float prey_max_energy <- 1.0;
 	float prey_max_transfer <- 0.1;
 	float prey_energy_consum <- 0.05;    
 	
 	// Predators
     int nb_predators_init <- 20;
+    int nb_predators_migrate <- 5;
     float predator_max_energy <- 1.0;
     float predator_max_transfer <- 0.5;
     float predator_energy_consum <- 0.02;
@@ -52,16 +54,24 @@ global {
     int predator_nb_max_offsprings <- 3;
     float predator_energy_reproduce <- 0.5;
     
+    // TODO: Figure out how to do multiple entry points. This line only adds the last point
+    // TODO: Add entry points for prey too
+    // TODO: Make entry point a polygon
+    geometry predator_entrypoint <- {10, 10} + {90, 90};
 
     int nb_preys -> {length (prey)}; 							// This defines a monitor variable
     int nb_predators -> {length (predator)}; 
     
     init {
+    	// RNG Seed:
+    	//seed<-42.0;
+    	
+    	write "Initialize Simulation";
+    	
+    	
     	create prey number: nb_preys_init ;
     	create predator number: nb_predators_init ;
-    	
-    	write "Global Init";
-    	    	
+    	    	    	
 //    	Change: Initialize water cells
 //		loop lakes from: 1 to: 3 {
 //			vegetation_cell water_origin <- one_of(vegetation_cell);
@@ -85,6 +95,31 @@ global {
     	    	
 	}
 	
+	reflex repopulate {
+		if (nb_predators = 0) {
+			write "Predator Migration";
+			
+			vegetation_cell _migration_point <- vegetation_cell closest_to(one_of(predator_entrypoint));
+			list migration_cells <- _migration_point neighbors_at 5;
+			
+	    	loop i from:1 to:nb_predators_migrate {
+	    	create predator number: 1 {
+            		my_cell <- one_of(migration_cells);
+            		location <- my_cell.location ;
+        		}	    		
+	    	}
+	    	
+	    	//create predator number: nb_predators_migrate;
+	    	
+	    	
+	    	
+
+		}
+		if (nb_preys = 0) {
+			create prey number: nb_preys_migrate;
+			write "Prey Migration";
+		} 
+	}
 
 }
 
