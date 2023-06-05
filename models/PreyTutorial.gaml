@@ -10,14 +10,13 @@
 // - Lakes are generated
 // - Plant growth depends on lake proximity
 
-// TODO: Reintroduce Predators near edge if extinct every 100 cycles
-
-// TODO: Make move speed a parameter (calculate cell neighbors inside agent move)
-// TODO: More intelligent behaviors 
-// TODO: Cave
-
-// TODO: Initialization from Image (step 12 forward)
-// TODO: Understand the optimization part better
+// Things to do:
+// - Reintroduce Predators near edge if extinct every 100 cycles
+// - Make move speed a parameter (calculate cell neighbors inside agent move)
+// - More intelligent behaviors 
+// - Cave
+// - Initialization from Image (step 12 forward)
+// - Understand the optimization part better
 
 
 
@@ -53,10 +52,11 @@ global {
     float predator_proba_reproduce <- 0.01;
     int predator_nb_max_offsprings <- 3;
     float predator_energy_reproduce <- 0.5;
-    
-    // TODO: Figure out how to do multiple entry points. This line only adds the last point
-    // TODO: Add entry points for prey too
-    // TODO: Make entry point a polygon
+
+	// Things to do for entry points:    
+    // - Figure out how to do multiple entry points. This line only adds the last point
+    // - Add entry points for prey too
+    // - Make entry point a polygon
     geometry predator_entrypoint <- {10, 10} + {90, 90};
 
     int nb_preys -> {length (prey)}; 							// This defines a monitor variable

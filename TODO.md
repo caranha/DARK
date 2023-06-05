@@ -1,0 +1,6 @@
+- Add distance to the model
+  - Estimate speed for agents
+    - exploring speed
+    - goal directed speed
+  - parameters for grid size based on speed
+  - nest/source distance based on speed
