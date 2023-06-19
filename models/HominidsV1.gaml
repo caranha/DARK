@@ -50,7 +50,7 @@ global {
 	
 	init {
 		create nest number: number_of_nest;
-	
+			
 	}
 	
 	bool is_day {
@@ -172,7 +172,7 @@ grid terrain_cell width: worldsize height: worldsize neighbors: 4 {
 	init {
 
 	}
-	
+		
 	action make_source {
 		water_source <- true;
 		add self to: world.water_sources;
