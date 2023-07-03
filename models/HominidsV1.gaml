@@ -36,7 +36,7 @@ global {
 	// Agent parameters
 	float exploring_pace <- 3.5 / 60;  // 3.5 m/minute; See AgentPace.md
 	float directed_pace <- 4.0;        // 4   m/second; See AgentPace.md 
-	float thirst_per_step <- 1.0 / 48; //(full thirst after a day)
+	float time_to_thirst <- 1 #day; //(full thirst after a day)
 	// FIXME: The parameter should be "time to full thirst" and expressed in day unit
 		
 	// Grid parameters
@@ -127,15 +127,30 @@ species hominid {
 	}
 	
 	reflex update {
-		// Update Status
-		thirst <- thirst + world.thirst_per_step;
-		if (thirst > rnd(0.5)+0.5) {
-			intent <- 1; // want to drink water
-			draw_color <- #red;
-		}
+		terrain_cell _here <- terrain_cell(self.location);
 		
+		// Update Agent status
+		thirst <- thirst + world.step;
+
 		// Update Movement
 		do move;
+
+		// Update Actions at current location
+		if (_here.water_source) { 
+			thirst <- 0.0;    // ASSUMPTION: drinking always happen if water is available, and fully satiates thirst
+			if not(known_water contains _here) {
+				add _here to: known_water;			
+			}
+		}						
+		
+		// Update Intents
+		if (thirst > world.time_to_thirst) {
+			intent <- 1; // want to drink water
+		} else {
+			intent <- 0;
+		}
+				
+		
 		
 		if (goal = nil) {
 			do choose_action;
@@ -160,18 +175,7 @@ species hominid {
 		}
 	}
 	
-	action choose_action {
-		// check what can be done in this cell -- TODO: Probably a different function!
-		terrain_cell _here <- terrain_cell(self.location);
-		if (_here.water_source) {
-			thirst <- 0.0;
-			intent <- 0;
-			draw_color <- #black;
-			if not(known_water contains _here) {
-				add _here to: known_water;			
-			}
-		}
-		
+	action choose_action {		
 		// decide the next action FIXME: drinking water at night?
 		if (intent = 1 and length(known_water) > 0) {
 			goal <- one_of(known_water); // Go drink water if thirsty
@@ -183,7 +187,10 @@ species hominid {
 	}
 	
 	aspect base {
-    	draw square(draw_size) color: draw_color ;
+		rgb _color <- draw_color;
+		if (intent = 1) { _color <- #red; }
+		
+		draw square(draw_size) color: _color ;
     }
 }
 
