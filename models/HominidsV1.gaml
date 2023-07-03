@@ -23,15 +23,28 @@
 
 model HominidsV1
 
+
 global {
+	// Constants
+	int EXPLORING <- 0;
+	int DIRECTED <- 1;
+	
+	
+	
 	// Parameters
 		
-	// Behavior parameters
+	// Agent parameters
+	float exploring_pace <- 3.5 / 60;  // 3.5 m/minute; See AgentPace.md
+	float directed_pace <- 4.0;        // 4   m/second; See AgentPace.md 
 	float thirst_per_step <- 1.0 / 48; //(full thirst after a day)
 	// FIXME: The parameter should be "time to full thirst" and expressed in day unit
 		
-	// World parameters
-	int worldsize <- 50;		
+	// Grid parameters
+	int grid_size <- 50;
+	float cell_size <- 100 #meter;       // Meters
+	
+	
+	// Environment paramters
 	int number_of_nest <- 2;
 	int hominids_per_nest <- 10; 
 	int watersources_per_nest <- 3;
@@ -51,6 +64,12 @@ global {
 	init {
 		create nest number: number_of_nest;
 			
+	}
+	
+	bool debug <- false;
+	reflex day_ping when: debug{
+		write (time + start_time);
+		write is_day();
 	}
 	
 	bool is_day {
@@ -90,80 +109,85 @@ species hominid {
 	rgb draw_color <- #black;
 	nest mynest;
 	
+	// hominid attributes
+	float directed_speed;
+	float exploring_speed;
+	
 	// hominid brain;
 	int intent <- 0; // 0- anything, 1- drink water
+	int pace <- EXPLORING;
 	terrain_cell goal;
 	list<terrain_cell> known_water;
 	
 	// Function called when hominids are created
 	init {
-		location <- mynest.location;		
+		location <- mynest.location;
+		directed_speed <- world.directed_pace * world.step / world.cell_size;
+		exploring_speed <- world.exploring_pace * world.step / world.cell_size;
 	}
 	
-	reflex act {
+	reflex update {
+		// Update Status
 		thirst <- thirst + world.thirst_per_step;
 		if (thirst > rnd(0.5)+0.5) {
 			intent <- 1; // want to drink water
 			draw_color <- #red;
 		}
 		
-		if (world.is_day()) {
-			if (intent = 1) {
-				do go_drink;	
-			} else {
-				do wander;				
-			}
-
-		} else {
-			do goto_nest;
-			
-		}
-	}
-
-	action go_drink {
-		if (terrain_cell(self.location).water_source) {
-			thirst <- 0.0;
-			intent <- 0;
-			goal <- nil;
-			draw_color <- #black;
-			return;
-		} 
-		
-		if (length(known_water) = 0) {
-			do wander;
-			return;
-		}
+		// Update Movement
+		do move;
 		
 		if (goal = nil) {
-			goal <- one_of(known_water);
+			do choose_action;
+		}
+	}
+	
+	action move {
+		if (goal = nil) { return; }
+		
+		float _speed;
+		if (pace = EXPLORING) {
+			_speed <- exploring_speed;
+		} else {
+			_speed <- directed_speed;
+		}
+				
+		if (distance_to(location, goal.location) < _speed) {
+			location <- goal.location;
+			goal <- nil;			
+		} else {
+			location <- location + (goal.location - location) * (_speed / distance_to(location, goal.location));
+		}
+	}
+	
+	action choose_action {
+		// check what can be done in this cell -- TODO: Probably a different function!
+		terrain_cell _here <- terrain_cell(self.location);
+		if (_here.water_source) {
+			thirst <- 0.0;
+			intent <- 0;
+			draw_color <- #black;
+			if not(known_water contains _here) {
+				add _here to: known_water;			
+			}
 		}
 		
-		location <- one_of(closest_to(terrain_cell(self.location).neighbors, goal.location)).location;
-	}
-
-	action wander {
-		// walk randomly
-		terrain_cell _goal <- one_of(terrain_cell(self.location).neighbors);
-		if (_goal.water_source and not(known_water contains _goal)) {
-			add _goal to: known_water;			
+		// decide the next action FIXME: drinking water at night?
+		if (intent = 1 and length(known_water) > 0) {
+			goal <- one_of(known_water); // Go drink water if thirsty
+		} else if (world.is_day()) {
+			goal <- one_of(terrain_cell(self.location).neighbors); // Wander FIXME: Memory
+		} else {
+			goal <- terrain_cell(mynest.location); // Go to nest at night
 		}
-		location <- _goal.location;	
 	}
-	
-	action goto_nest {
-		// go back to nest
-		if (location != mynest.location) {
-				location <- one_of(closest_to(terrain_cell(self.location).neighbors,self.mynest.location)).location;				
-			} 
-	}
-	
 	
 	aspect base {
     	draw square(draw_size) color: draw_color ;
     }
 }
 
-grid terrain_cell width: worldsize height: worldsize neighbors: 4 {
+grid terrain_cell width: grid_size height: grid_size neighbors: 4 {
 
 	bool water_source <- false;	
 	list<hominid> hominids_inside -> {hominid inside self};
