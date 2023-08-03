@@ -117,7 +117,7 @@ species hominid {
 	int intent <- 0; // 0- anything, 1- drink water
 	int pace <- EXPLORING;
 	terrain_cell goal;
-	list<terrain_cell> known_water;
+	list<map> knowledge;
 	
 	// Function called when hominids are created
 	init {
@@ -135,12 +135,23 @@ species hominid {
 		// Update Movement
 		do move;
 
+		// TODO: This does not need to be done EVERY STEP. Think about when to call this: For example, when agents reach a new tile.
+		// Update Knowledge at current location
+		map _mem_here <- knowledge first_with (each["location"] = _here.location);
+		if (_mem_here = nil) { // no knowledge -- update
+			map _know_here <- ["location":: _here.location, 
+				   "timestamp":: world.step, 
+				   "water":: _here.water_source];
+		} else { // TODO: Continue here, by updating _mem_here
+			
+		}
+		
+		
+		// test if _know_here is in knowledge
+
 		// Update Actions at current location
 		if (_here.water_source) { 
 			thirst <- 0.0;    // ASSUMPTION: drinking always happen if water is available, and fully satiates thirst
-			if not(known_water contains _here) {
-				add _here to: known_water;			
-			}
 		}						
 		
 		// Update Intents
@@ -148,9 +159,7 @@ species hominid {
 			intent <- 1; // want to drink water
 		} else {
 			intent <- 0;
-		}
-				
-		
+		}		
 		
 		if (goal = nil) {
 			do choose_action;
